@@ -23,8 +23,8 @@ import os
 import tempfile
 import zipfile
 import shutil
-from cStringIO import StringIO
-from App.class_init import InitializeClass
+from io import BytesIO
+from AccessControl.class_init import InitializeClass
 from ExtensionClass import Base
 from AccessControl import ClassSecurityInfo
 from Acquisition import aq_base
@@ -65,10 +65,12 @@ class Export(Base):
 
         content_type, length, data = ddata
 
-        if type(data) is type(''):
-            return StringIO(data)
+        if isinstance(data, str):
+            data = data.encode('utf-8')
+        if isinstance(data, bytes):
+            return BytesIO(data)
 
-        s = StringIO()
+        s = BytesIO()
         while data is not None:
             s.write(data.data)
             data = data.next
@@ -77,7 +79,7 @@ class Export(Base):
 
     security.declareProtected(ManagePortal, 'export')
     def export(self, context, paths):
-        data = StringIO()
+        data = BytesIO()
         out = zipfile.ZipFile(data, 'w')
 
         for path in paths:
@@ -101,7 +103,7 @@ class Export(Base):
 
     security.declareProtected(ManagePortal, 'export_info')
     def export_info(self, context, info):
-        data = StringIO()
+        data = BytesIO()
         out = zipfile.ZipFile(data, 'w')
 
         for d in info:

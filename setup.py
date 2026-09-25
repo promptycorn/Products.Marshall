@@ -1,6 +1,7 @@
+from pathlib import Path
 from setuptools import setup, find_packages
 
-version = '2.1.4'
+version = (Path(__file__).resolve().parent / 'version.txt').read_text().strip()
 
 setup(name='Products.Marshall',
       version=version,
@@ -16,7 +17,6 @@ setup(name='Products.Marshall',
         "License :: OSI Approved :: GNU General Public License (GPL)",
         "Operating System :: OS Independent",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 2.7",
         "Topic :: Internet :: WWW/HTTP",
         "Topic :: Internet :: File Transfer Protocol (FTP)",
         ],
@@ -26,8 +26,9 @@ setup(name='Products.Marshall',
       author_email='plone-developers@lists.sourceforge.net',
       url='http://pypi.python.org/pypi/Products.Marshall',
       packages=find_packages(exclude=['ez_setup']),
-      namespace_packages=['Products'],
+
       include_package_data=True,
+      python_requires='>=3.10',
       zip_safe=False,
       extras_require=dict(
         test=[
@@ -47,6 +48,6 @@ setup(name='Products.Marshall',
           'Acquisition',
           'DateTime',
           'ExtensionClass',
-          'Zope2',
+          'Zope>=6.1,<7',
       ],
       )

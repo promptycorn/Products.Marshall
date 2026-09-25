@@ -29,7 +29,8 @@ Authors: Kapil Thangavelu <k_vertigo@objectrealms.net>
 $Id: $
 """
 import re
-from sets import Set
+import base64
+from OFS.Image import File, Pdata
 
 from Products.CMFCore.utils import getToolByName
 from Products.Archetypes import config as atcfg
@@ -84,7 +85,7 @@ class ATAttribute(SchemaAttribute):
         values = atapi.BaseObject.__getitem__(instance, self.name)
         if not isinstance(values, (list, tuple)):
             values = [values]
-        return filter(None, values)
+        return [value for value in values if value is not None]
 
     def serialize(self, dom, parent_node, instance, options={}):
 
@@ -100,12 +101,19 @@ class ATAttribute(SchemaAttribute):
             name_attr.value = self.name
             node.setAttributeNode(name_attr)
 
-            # try to get 'utf-8' encoded string
-            if isinstance(value, unicode):
-                value = value.encode('utf-8')
-            elif IBaseUnit.providedBy(value):
+            # DOM nodes contain text; binary field values use base64.
+            if IBaseUnit.providedBy(value):
+                binary = value.isBinary()
                 value = value.getRaw(encoding='utf-8')
-            else:
+                if isinstance(value, bytes) and not binary:
+                    value = value.decode('utf-8')
+            elif isinstance(value, File):
+                value = bytes(value)
+            elif isinstance(value, Pdata):
+                value = bytes(value)
+            elif callable(getattr(value, '__bytes__', None)):
+                value = bytes(value)
+            elif not isinstance(value, (str, bytes)):
                 value = str(value)
 
             if self.isReference(instance):
@@ -115,13 +123,15 @@ class ATAttribute(SchemaAttribute):
                     uid_node = dom.createElementNS(self.namespace.xmlns,
                                                     'uid')
                     value = dom.createTextNode(value)
-                    uid_node.append(value)
-                    ref_node.append(uid_node)
-                    node.append(ref_node)
-            elif (encode_ctrlchars and
-                  isinstance(value, str) and
-                  has_ctrlchars(value)):
-                value = value.encode('base64')
+                    uid_node.appendChild(value)
+                    ref_node.appendChild(uid_node)
+                    node.appendChild(ref_node)
+            elif (isinstance(value, bytes) or
+                  (encode_ctrlchars and has_ctrlchars(value))):
+                if isinstance(value, str):
+                    value = value.encode('utf-8')
+                    node.setAttribute('charset', 'utf-8')
+                value = base64.b64encode(value).decode('ascii')
                 attr = dom.createAttributeNS(self.namespace.xmlns,
                                              'transfer_encoding')
                 attr.value = 'base64'
@@ -133,7 +143,7 @@ class ATAttribute(SchemaAttribute):
                 node.appendChild(value_node)
 
             # set the mimetype if it is available
-            field = instance.schema._fields[self.name]
+            field = instance.Schema()[self.name]
             if IObjectField.providedBy(field):
                 mime_attr = dom.createAttribute('mimetype')
                 mime_attr.value = field.getContentType(instance)
@@ -146,16 +156,17 @@ class ATAttribute(SchemaAttribute):
 
     def processXmlValue(self, context, value):
         if value is None:
-            return
-
-        value = value.strip()
-        if not value:
-            return
+            value = ''
 
         # decode node value if needed
         te = context.node.get('transfer_encoding', None)
         if te is not None:
-            value = value.decode(te)
+            if te != 'base64':
+                raise ValueError('Unsupported transfer encoding: %s' % te)
+            value = base64.b64decode(''.join(value.split()), validate=True)
+            charset = context.node.get('charset')
+            if charset:
+                value = value.decode(charset)
 
         context_data = context.getDataFor(self.namespace.xmlns)
         data = context_data.setdefault(self.name, {'mimetype': None})
@@ -163,7 +174,7 @@ class ATAttribute(SchemaAttribute):
         if mimetype is not None:
             data['mimetype'] = mimetype
 
-        if data.has_key('value'):
+        if 'value' in data:
             svalues = data['value']
             if not isinstance(svalues, list):
                 data['value'] = svalues = [svalues]
@@ -179,7 +190,7 @@ class ATAttribute(SchemaAttribute):
         if data is None:
             return
         values = data.get('value', None)
-        if not values:
+        if values is None:
             return
 
 	# check if we are a schema attribute
@@ -354,10 +365,10 @@ class Archetypes(XmlNamespace):
         for ns in getRegisteredNamespaces():
             if ns.uses_at_fields:
                 fields.extend(ns.getATFields())
-        assert len(Set(fields)) == len(fields), (
+        assert len(set(fields)) == len(fields), (
             "Multiple NS multiplexing field")
 
-        field_keys = [k for k in instance.Schema().keys()
+        field_keys = [k for k in list(instance.Schema().keys())
                       if k not in exclude_attrs and k not in fields]
         #Set(instance.Schema().keys())-mset
 
@@ -373,7 +384,7 @@ class Archetypes(XmlNamespace):
             yield self.getAttributeByName(fk)
 
         # yield additional intrinsic at framework attrs
-        for attribute in self.at_fields.values():
+        for attribute in list(self.at_fields.values()):
             yield attribute
 
     def serialize(self, dom, parent_node, instance, options):
@@ -497,10 +508,10 @@ class Reference(dict):
         if path is not None:
             return context.restrictedTraverse(path, None)
         catalog = getToolByName(context, 'portal_catalog')
-        params = [(k, v) for k, v in self.items() \
+        params = [(k, v) for k, v in list(self.items()) \
                   if k not in ('uid', 'path')]
         kw = [(self.index_map.get(k), v) for k, v in params]
-        kw = dict(filter(lambda x: x[0] is not None and x, kw))
+        kw = dict([x for x in kw if x[0] is not None and x])
         res = catalog(**kw)
         if not res:
             return None
@@ -508,7 +519,7 @@ class Reference(dict):
         # First step: Try to filter by brain metadata
         # *Usually* a metadata item will exist with the same name
         # as the index.
-        verify = lambda obj: filter(None, [obj[k] == v for k, v in kw.items()])
+        verify = lambda obj: [_f for _f in [obj[k] == v for k, v in list(kw.items())] if _f]
         for r in res:
             # Shortest path: If a match is found, return immediately
             # instead of checking all of the results.
@@ -518,8 +529,8 @@ class Reference(dict):
         # Second step: Try to get the real objects and look
         # into them. Should be *very* slow, so use with care.
         # We use __getitem__ to access the field raw data.
-        verify = lambda obj: filter(None, [obj[k] == v for k, v in params])
-        valid = filter(verify, [r.getObject() for r in res])
+        verify = lambda obj: [_f for _f in [obj[k] == v for k, v in params] if _f]
+        valid = list(filter(verify, [r.getObject() for r in res]))
         if not valid:
             return None
         if len(valid) > 1:

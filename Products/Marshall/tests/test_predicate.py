@@ -1,10 +1,7 @@
 # Load fixture
-from Testing import ZopeTestCase
 from Products.Marshall.tests.base import BaseTest
 
 # Install our product
-ZopeTestCase.installProduct('Marshall')
-ZopeTestCase.installProduct('Archetypes')
 
 from Products.CMFCore.utils import getToolByName
 from Products.Marshall.predicates import add_predicate
@@ -49,23 +46,23 @@ class DefaultPredicateTest(PredicateTest):
                       expression='',
                       component_name='primary_field')
 
-        self.assertEquals(
+        self.assertEqual(
             self.get(None, filename='sample.doc'), ('primary_field',))
-        self.assertEquals(
+        self.assertEqual(
             self.get(None, filename='sample.txt'),
             ('rfc822', 'primary_field'))
 
         # Make sure reordering the predicates does change the order
         # in which ids are returned.
         self.reverse()
-        self.assertEquals(
+        self.assertEqual(
             self.get(None, filename='sample.txt'),
             ('primary_field', 'rfc822'))
 
-        self.assertEquals(self.get(None, filename='sample.rot'),
+        self.assertEqual(self.get(None, filename='sample.rot'),
                           ('primary_field',))
         # Make sure it works even if no filename kw is passed in
-        self.assertEquals(self.get(None), ('primary_field',))
+        self.assertEqual(self.get(None), ('primary_field',))
 
     if config.hasLibxml2:
         def test_expression_content_type(self):
@@ -90,20 +87,20 @@ class DefaultPredicateTest(PredicateTest):
                 expression="",
                 component_name='primary_field')
 
-            self.assertEquals(
+            self.assertEqual(
                 self.get(None, content_type='text/xml'),
                 ('simple_xml', 'primary_field'))
-            self.assertEquals(self.get(None, content_type='text/plain'),
+            self.assertEqual(self.get(None, content_type='text/plain'),
                               ('rfc822', 'primary_field'))
 
             # Make sure reordering the predicates does change the order
             # in which ids are returned.
             self.reverse()
-            self.assertEquals(self.get(None, content_type='text/plain'),
+            self.assertEqual(self.get(None, content_type='text/plain'),
                               ('primary_field', 'rfc822'))
 
             # Make sure it works even if no content_type kw is passed in
-            self.assertEquals(self.get(None), ('primary_field',))
+            self.assertEqual(self.get(None), ('primary_field',))
 
     def test_expression_data(self):
         add_predicate(
@@ -127,16 +124,16 @@ class DefaultPredicateTest(PredicateTest):
             predicate='default',
             expression='',
             component_name='primary_field')
-        self.assertEquals(self.get(None, data='4242'), ('primary_field',))
-        self.assertEquals(self.get(None, data='42'), ('rfc822', 'primary_field'))
+        self.assertEqual(self.get(None, data='4242'), ('primary_field',))
+        self.assertEqual(self.get(None, data='42'), ('rfc822', 'primary_field'))
 
         # Make sure reordering the predicates does change the order
         # in which ids are returned.
         self.reverse()
-        self.assertEquals(self.get(None, data='42'), ('primary_field', 'rfc822'))
+        self.assertEqual(self.get(None, data='42'), ('primary_field', 'rfc822'))
 
         # Make sure it works even if no data kw is passed in
-        self.assertEquals(self.get(None), ('primary_field',))
+        self.assertEqual(self.get(None), ('primary_field',))
 
 
 class XMLNSPredicateTest(PredicateTest):
@@ -160,9 +157,9 @@ class XMLNSPredicateTest(PredicateTest):
            FooBaz
         </test>
         """
-        self.assertEquals(self.get(None, data=data), ('primary_field',))
-        self.assertEquals(self.get(None, data=bad_data), ())
-        self.assertEquals(self.get(None, data=''), ())
+        self.assertEqual(self.get(None, data=data), ('primary_field',))
+        self.assertEqual(self.get(None, data=bad_data), ())
+        self.assertEqual(self.get(None, data=''), ())
 
     def test_xmlns_element(self):
         p = add_predicate(
@@ -178,7 +175,7 @@ class XMLNSPredicateTest(PredicateTest):
            Doesn't Matter
         </test>
         """
-        self.assertEquals(self.get(None, data=data), ('primary_field',))
+        self.assertEqual(self.get(None, data=data), ('primary_field',))
 
     def test_xmlns_element_ns(self):
         p = add_predicate(
@@ -195,7 +192,7 @@ class XMLNSPredicateTest(PredicateTest):
                 FooBar
         </t:test>
         """
-        self.assertEquals(self.get(None, data=data), ('primary_field',))
+        self.assertEqual(self.get(None, data=data), ('primary_field',))
 
     def test_xmlns_element_ns_att(self):
         p = add_predicate(
@@ -211,7 +208,7 @@ class XMLNSPredicateTest(PredicateTest):
         <t:test xmlns:t="http://foo.com/bar"
            wot="FooBar" />
         """
-        self.assertEquals(self.get(None, data=data), ('primary_field',))
+        self.assertEqual(self.get(None, data=data), ('primary_field',))
 
     def test_xmlns_element_ns_att_ns(self):
         p = add_predicate(
@@ -228,7 +225,7 @@ class XMLNSPredicateTest(PredicateTest):
         <t:test xmlns:t="http://foo.com/bar"
            t:wot="FooBar" />
         """
-        self.assertEquals(self.get(None, data=data), ('primary_field',))
+        self.assertEqual(self.get(None, data=data), ('primary_field',))
 
 
 def test_suite():

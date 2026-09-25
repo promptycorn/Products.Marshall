@@ -1,9 +1,9 @@
 from Products.Marshall.handlers.atxml import registerNamespace
 
-from adobens import AdobeXMP
-from atns import Archetypes
-from dcns import DublinCore
-from cmfns import CMF
+from .adobens import AdobeXMP
+from .atns import Archetypes
+from .dcns import DublinCore
+from .cmfns import CMF
 
 registerNamespace(DublinCore)
 registerNamespace(AdobeXMP)

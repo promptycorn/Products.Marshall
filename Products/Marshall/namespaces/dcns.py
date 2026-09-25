@@ -87,7 +87,7 @@ class DCAttribute(SchemaAttribute):
         else:
             raise AssertionError("Many values on single value attr")
 
-        return filter(None, values)
+        return [_f for _f in values if _f]
 
     def deserialize(self, instance, ns_data):
 

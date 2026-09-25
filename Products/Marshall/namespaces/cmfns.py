@@ -124,7 +124,7 @@ class LocalRolesAttribute(SchemaAttribute):
         elname = "%s:%s" % (self.namespace.prefix, "security")
         node = dom.createElementNS(CMF.xmlns, elname)
 
-        for user_id, roles in values.items():
+        for user_id, roles in list(values.items()):
             for role in roles:
                 elname = "%s:%s" % (self.namespace.prefix, self.name)
                 lr_node = dom.createElementNS(CMF.xmlns, elname)
@@ -231,7 +231,7 @@ class WorkflowAttribute(SchemaAttribute):
 
         elname = "%s:workflow_history" % (self.namespace.prefix)
         node = dom.createElementNS(self.namespace.xmlns, elname)
-        keys = history.keys()
+        keys = list(history.keys())
         for wf_id in keys:
             wf_node = self.serializeWorkflow(dom, wf_id, history)
             node.appendChild(wf_node)
@@ -253,8 +253,8 @@ class WorkflowAttribute(SchemaAttribute):
         for history in wf_hist[wf_id]:
             elname = "%s:%s" % (prefix, "history")
             history_node = dom.createElementNS(xmlns, elname)
-            items = history.items()
-            items.sort(lambda a, b: cmp(a[0], b[0]))
+            items = list(history.items())
+            items.sort(key=lambda item: item[0])
 
             for k, v in items:
                 elname = "%s:%s" % (prefix, "var")

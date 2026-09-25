@@ -4,13 +4,9 @@ import re
 import zipfile
 
 # Load fixture
-from Testing import ZopeTestCase
 from Products.Marshall.tests.base import BaseTest
 
 # Install our product
-ZopeTestCase.installProduct('Marshall')
-ZopeTestCase.installProduct('Archetypes')
-ZopeTestCase.installProduct('ATContentTypes')
 
 from Products.CMFCore.utils import getToolByName
 from Products.Marshall import registry
@@ -47,7 +43,7 @@ def import_file(relparts, fname, target, handler):
 IGNORE_NAMES = ('CVS', '.svn')
 def fromFS(base, target, metadata='atxml', data='primary_field'):
     paths = []
-    ignore = lambda x: filter(None, [x.endswith(n) for n in IGNORE_NAMES])
+    ignore = lambda x: [_f for _f in [x.endswith(n) for n in IGNORE_NAMES] if _f]
     def import_metadata(relparts, fname, target, handler=metadata):
         return import_file(relparts, fname, target, handler)
     def import_data(relparts, fname, target, handler=data):
@@ -55,7 +51,7 @@ def fromFS(base, target, metadata='atxml', data='primary_field'):
     def import_func(arg, dirname, names):
         # Remove ignored filenames
         [names.remove(n) for n in names if ignore(n)]
-        names = map(os.path.normcase, names)
+        names = list(map(os.path.normcase, names))
         for name in names:
             fullname = os.path.join(dirname, name)
             if not os.path.isfile(fullname):
@@ -70,7 +66,9 @@ def fromFS(base, target, metadata='atxml', data='primary_field'):
                 import_metadata(relparts, fullname, target)
             else:
                 import_data(relparts, fullname, target)
-    os.path.walk(base, import_func, paths)
+    for dirname, directories, names in os.walk(base):
+        directories[:] = [name for name in directories if not ignore(name)]
+        import_func(paths, dirname, names)
     return paths
 
 class ExportTest(BaseTest):
@@ -86,13 +84,13 @@ class ExportTest(BaseTest):
         self.folder = self.portal.test_data
         paths = fromFS(self.base, self.folder)
         paths.sort()
-        obj_paths = filter(lambda x: '.metadata' not in x, paths)
+        obj_paths = [x for x in paths if '.metadata' not in x]
         data = self.tool.export(self.folder, obj_paths)
         zipf = zipfile.ZipFile(data)
-        self.assertEquals(zipf.testzip(), None)
+        self.assertEqual(zipf.testzip(), None)
         zipl = zipf.namelist()
         zipl.sort()
-        self.assertEquals(zipl, paths)
+        self.assertEqual(zipl, paths)
 
 def test_suite():
     import unittest

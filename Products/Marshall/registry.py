@@ -19,11 +19,11 @@
 $Id$
 """
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from OFS.OrderedFolder import OrderedFolder
 from Persistence import PersistentMapping
-from App.class_init import InitializeClass
+from AccessControl.class_init import InitializeClass
 from AccessControl import ClassSecurityInfo
 from AccessControl.Permissions import view, manage_properties
 
@@ -55,7 +55,7 @@ def registerComponent(name, title, component):
     comp_registry[name] = RegistryItem(name, title, component)
 
 def getRegisteredComponents():
-    return [item.info() for item in comp_registry.values()]
+    return [item.info() for item in list(comp_registry.values())]
 
 def getComponent(name):
     return comp_registry[name].factory()
@@ -67,12 +67,13 @@ def registerPredicate(name, title, component):
     registry[name] = RegistryItem(name, title, component)
 
 def getRegisteredPredicates():
-    return [item.info() for item in registry.values()]
+    return [item.info() for item in list(registry.values())]
 
 def createPredicate(name, id, title, expression, component_name):
     return registry[name].create(id, title, expression, component_name)
 
 
+@implementer(IMarshallRegistry)
 class Registry(OrderedFolder, Export):
     """ A registry that holds predicates and applies them to
     objects in the hope of selecting the right one that matches
@@ -82,7 +83,6 @@ class Registry(OrderedFolder, Export):
     meta_type = 'Marshaller Registry'
     id = TOOL_ID
     security = ClassSecurityInfo()
-    implements(IMarshallRegistry)
 
     def __init__(self, id='', title=''):
         OrderedFolder.__init__(self, self.id)

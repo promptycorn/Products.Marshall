@@ -16,7 +16,8 @@ tool_id = Registry.id
 
 
 def get_data(fname):
-    return open(os.path.join(PACKAGE_HOME, 'data', fname), 'rb').read()
+    with open(os.path.join(PACKAGE_HOME, 'data', fname), 'rb') as source:
+        return source.read()
 
 
 class BlobMarshallTest(BaseTest):
@@ -89,7 +90,7 @@ OPTIONFLAGS = (doctest.ELLIPSIS |
 def test_suite():
     import unittest
     from doctest import DocFileSuite
-    from plone.app.testing.bbb import PTC_FUNCTIONAL_TESTING
+    from Products.Marshall.tests.base import FUNCTIONAL_TESTING
     from plone.testing import layered
     suite = unittest.TestSuite()
 
@@ -97,6 +98,6 @@ def test_suite():
         'doc/README.txt',
         package='Products.Marshall',
         optionflags=OPTIONFLAGS),
-        layer=PTC_FUNCTIONAL_TESTING))
+        layer=FUNCTIONAL_TESTING))
     suite.addTest(unittest.makeSuite(BlobMarshallTest))
     return suite

@@ -19,7 +19,7 @@
 $Id$
 """
 
-import pkg_resources
+from importlib.metadata import entry_points
 
 # Kick off Extensions.Install import
 from Products.Marshall.Extensions import Install
@@ -52,7 +52,7 @@ def initialize(context):
         icon='www/registry.png')
 
     # Load marshallers registered by the way of egg entry points.
-    for ep in pkg_resources.iter_entry_points('marshall.component'):
+    for ep in entry_points(group='marshall.component'):
         component = ep.load()
         registry.registerComponent(
             ep.name, getattr(component, '__name__', ep.name), component)

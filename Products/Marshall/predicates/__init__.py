@@ -19,8 +19,8 @@
 $Id$
 """
 
-from _base import Predicate, constructors, manage_addPredicate
+from ._base import Predicate, constructors, manage_addPredicate
 add_predicate = manage_addPredicate
 
 # Kick registration of submodules
-import _xmlns
+from . import _xmlns

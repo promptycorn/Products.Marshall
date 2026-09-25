@@ -25,9 +25,9 @@ $Id: $
 # Georg Gogo. BERNHARD: UUencoded pluggable namespace for all at fields
 
 #from DateTime import DateTime
-from Products.Marshall.public import XmlNamespace, SchemaAttribute
+from Products.Marshall.handlers.atxml import XmlNamespace, SchemaAttribute
 from Products.Archetypes import public as atapi
-from cStringIO import StringIO
+from io import BytesIO
 
 import base64
 import uu
@@ -59,21 +59,25 @@ class UUAttribute(SchemaAttribute):
 #        return filter(None, values)
 
     def base64encode(self, string):
-        return base64.encodestring(string)
+        return base64.encodebytes(string).decode('ascii')
 
     def base64decode(self, string):
-        return base64.decodestring(string)
+        if isinstance(string, str):
+            string = string.encode('ascii')
+        return base64.decodebytes(string)
 
     def uuencode(self, string):
         # uu encode a srting
-        stringio = StringIO()
-        uu.encode(StringIO(string), stringio)
-        return stringio.getvalue()
+        stringio = BytesIO()
+        uu.encode(BytesIO(string), stringio)
+        return stringio.getvalue().decode('ascii')
 
     def uudecode(self, string):
         # uu decode a srting
-        stringio = StringIO()
-        uu.decode(StringIO(string), stringio)
+        if isinstance(string, str):
+            string = string.encode('ascii')
+        stringio = BytesIO()
+        uu.decode(BytesIO(string), stringio)
         return stringio.getvalue()
 
     def char_encode(self, string):
@@ -103,7 +107,7 @@ class UUAttribute(SchemaAttribute):
     def serialize(self, dom, parent_node, instance):
 
         if DEBUG:
-            print "uuns/UUattribute", instance, self.name
+            print("uuns/UUattribute", instance, self.name)
 
         field = instance.Schema().getField(self.name)
         baseunit = field.getBaseUnit(instance)
@@ -150,9 +154,9 @@ class UUNS(XmlNamespace):
 
     def getAttributes(self, instance):
 
-        field_keys = instance.Schema().keys()
+        field_keys = list(instance.Schema().keys())
         if DEBUG:
-            print "UUNS/getAttributes", field_keys
+            print("UUNS/getAttributes", field_keys)
         #import pdb; pdb.set_trace() # @@@
         #return fields
 
@@ -190,7 +194,7 @@ class UUNS(XmlNamespace):
                 yield self.getAttributeByName(fk)
 
             if DEBUG:
-                print fk, isBinary
+                print(fk, isBinary)
 
         #
         ## yield additional intrinsic at framework attrs

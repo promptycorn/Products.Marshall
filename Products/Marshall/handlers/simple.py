@@ -20,10 +20,10 @@ $Id: _xml.py 2994 2004-09-09 12:22:37Z dreamcatcher $
 """
 
 import os
-import thread
-from types import ListType, TupleType
+import _thread
+ListType, TupleType = list, tuple
 from xml.dom import minidom
-from cStringIO import StringIO
+from io import StringIO
 from DateTime import DateTime
 from Products.CMFCore.utils import getToolByName
 from Products.Archetypes.Marshall import Marshaller

@@ -19,9 +19,9 @@
 $Id: config.py 7851 2007-03-31 13:01:43Z seletz $
 """
 
-from StringIO import StringIO
+from io import BytesIO
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from Products.GenericSetup.interfaces import IFilesystemExporter
 from Products.GenericSetup.interfaces import IFilesystemImporter
@@ -158,10 +158,10 @@ class MarshallRegistryImporter(ImportConfiguratorBase):
          }
 
 
+@implementer(IFilesystemExporter, IFilesystemImporter)
 class MarshallRegistryFileExportImportAdapter(object):
     """ Designed for use when exporting / importing within a container.
     """
-    implements(IFilesystemExporter, IFilesystemImporter)
 
     def __init__(self, context):
         self.context = context
@@ -191,7 +191,8 @@ class MarshallRegistryFileExportImportAdapter(object):
             import_context.note('SGAIFA',
                                 'no %s in %s' % (_FILENAME, subdir))
         else:
-            request = FauxDAVRequest(BODY=data, BODYFILE=StringIO(data))
+            body = data.encode('utf-8') if isinstance(data, str) else data
+            request = FauxDAVRequest(BODY=body, BODYFILE=BytesIO(body))
             response = FauxDAVResponse()
             _updatePluginRegistry(self.context,
                                   data,

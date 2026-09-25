@@ -33,10 +33,10 @@ $Id: __init__.py 2886 2004-08-25 03:51:04Z dreamcatcher $
 """
 
 import os, sys, time
-import httplib, urllib
+import http.client, urllib.request, urllib.parse, urllib.error
 import string
 from optparse import OptionParser
-from base64 import encodestring
+from xml.parsers.expat import ExpatError
 from WebDAV import davlib     # not the standard davlib
 from xml.dom import minidom
 
@@ -80,15 +80,15 @@ parser.add_option("-s", "--server", dest="serverend",
 (options, args) = parser.parse_args()
 
 if len(args) < 2:
-    print "Error: Server and path are required. Use -h for help."
-    print
+    print("Error: Server and path are required. Use -h for help.")
+    print()
     sys.exit(-1)
 
 if len(args) > 2:
-    print "Using ATXML files supplied on commandline:"
+    print("Using ATXML files supplied on commandline:")
     files = args[2:]
 else:
-    print "Using all ATXML files in directory:"
+    print("Using all ATXML files in directory:")
     files = [x for x in os.listdir(".") if x.endswith(options.atxmlend)]
 
 server = args[0]
@@ -100,13 +100,13 @@ bad = []
 count = 0
 for file in files:
     try:
-        metafile = open(file)
+        metafile = open(file, 'rb')
         metacontent = metafile.read()
 
         name = metafile.name
-        print name,
+        print(name, end=' ')
         if not name.endswith(options.atxmlend):
-            print "Not properly named. Expected to end with '%s'" % options.atxmlend
+            print("Not properly named. Expected to end with '%s'" % options.atxmlend)
             continue
         if len(options.atxmlend) > 0:
             id = fid = name[:-len(options.atxmlend)]
@@ -116,7 +116,7 @@ for file in files:
         metafile.close()
 
         try:
-            f = open(fid+options.contentend)
+            f = open(fid+options.contentend, 'rb')
             content = f.read()
             f.close()
         except IOError:
@@ -133,7 +133,7 @@ for file in files:
             pass
 
         path = "%s%s%s" % (pathstarts,id,options.serverend)
-        print "-> %s" % path,
+        print("-> %s" % path, end=' ')
 
         errormeta = None
         response = upload(metacontent, conn, path)
@@ -148,28 +148,28 @@ for file in files:
         #print response.status,
 
         if errormeta or errorcontent:
-            print "FAIL"
-            print "   Metadata: %s" % errormeta
-            print "   Content:  %s" % errorcontent
+            print("FAIL")
+            print("   Metadata: %s" % errormeta)
+            print("   Content:  %s" % errorcontent)
             bad += [name]
         else:
-            print "ok"
+            print("ok")
             count += 1
-    except "ExpatError":
-        print "FAIL: malformed ATXML file"
+    except ExpatError:
+        print("FAIL: malformed ATXML file")
         bad += [name]
-    except Exception, e:
-        print "FAIL"
-        print "  %s" % e
+    except Exception as e:
+        print("FAIL")
+        print("  %s" % e)
         bad += [name]
 
 conn.close()
 
 end = time.time()
 
-print "Successfully imported: %s pieces out of %s" % (`count`,`len(files)`)
-print "Time elapsed: %s" % `end-start`
-print
-print "There were %s failures: " % `len(bad)`,
+print("Successfully imported: %s pieces out of %s" % (repr(count),repr(len(files))))
+print("Time elapsed: %s" % repr(end-start))
+print()
+print("There were %s failures: " % repr(len(bad)), end=' ')
 for num in bad:
-    print num,
+    print(num, end=' ')

@@ -21,9 +21,9 @@ $Id$
 
 from xml.dom import minidom
 from AccessControl import ClassSecurityInfo
-from App.class_init import InitializeClass
+from AccessControl.class_init import InitializeClass
 from Products.CMFCore.permissions import ManagePortal
-from _base import Predicate
+from ._base import Predicate
 from Products.Marshall.registry import registerPredicate
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
 
@@ -70,7 +70,7 @@ class XMLNS(Predicate):
         """
 
         for n in (element_ns, element_name, attr_ns, attr_name):
-            if not isinstance(n, basestring):
+            if not isinstance(n, str):
                 raise TypeError('string required, got %r.' % n)
         self._value = value
         self._element_ns = element_ns
@@ -105,7 +105,7 @@ class XMLNS(Predicate):
             doc = minidom.parseString(body)
         except:
             return ()
-        elm_args = filter(None, (self.getElementNS(), self.getElementName()))
+        elm_args = [_f for _f in (self.getElementNS(), self.getElementName()) if _f]
         get_elm = (len(elm_args) == 2 and doc.getElementsByTagNameNS
                    or doc.getElementsByTagName)
         elm = get_elm(*elm_args)
@@ -113,8 +113,8 @@ class XMLNS(Predicate):
             return ()
         match = True
         elm = elm[0]
-        attr_args = filter(None, (self.getAttributeNS(),
-                                  self.getAttributeName()))
+        attr_args = [_f for _f in (self.getAttributeNS(),
+                                  self.getAttributeName()) if _f]
         if not attr_args:
             get_attr = lambda elm=elm: elm.firstChild.nodeValue.strip()
         else:

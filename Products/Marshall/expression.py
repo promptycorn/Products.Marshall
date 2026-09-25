@@ -23,7 +23,7 @@ $Id$
 """
 
 from Persistence import Persistent
-from App.class_init import InitializeClass
+from AccessControl.class_init import InitializeClass
 from Acquisition import aq_inner, aq_parent
 from AccessControl import getSecurityManager, ClassSecurityInfo
 

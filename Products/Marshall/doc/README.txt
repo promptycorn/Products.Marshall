@@ -85,7 +85,10 @@ Save current marshaller implementation, and register
 At this point, our Article should be able to use the Marshaller
 Registry to decide what Marshaller to use at runtime.
 
-    >>> from Products.Archetypes.tests.utils import makeContent
+    >>> def makeContent(container, portal_type, id):
+    ...     container.invokeFactory(portal_type, id)
+    ...     container[id].processForm()
+    ...     return container[id]
     >>> article = makeContent(portal, 'Document', 'article')
     >>> article.getId()
     'article'
@@ -127,18 +130,19 @@ stuff into the 'blurb' field using CDATA.
   ...   <field id="text">
   ...    Here is some Text
   ...   </field>
-  ... </metadata>"""
+  ... </metadata>""".lstrip()
 
-  >>> from Testing.ZopeTestCase.zopedoctest.functional import http
-  >>> from Testing.ZopeTestCase.sandbox import AppZapper
+  >>> from plone.testing.zope import Browser
   >>> from plone.app.testing import SITE_OWNER_NAME, SITE_OWNER_PASSWORD
-  >>> AppZapper().set(layer['app'])
-  >>> print http(r"""
-  ... PUT /plone/article HTTP/1.1
-  ... Content-Type: text/xml
-  ... Authorization: Basic %s:%s
-  ... %s""" %  (SITE_OWNER_NAME, SITE_OWNER_PASSWORD, xml_input), handle_errors=False)
-  HTTP/1.1 204 No Content...
+  >>> import transaction
+  >>> transaction.commit()
+  >>> browser = Browser(layer['app'])
+  >>> browser.handleErrors = False
+  >>> headers = {'Authorization': 'Basic %s:%s' % (SITE_OWNER_NAME, SITE_OWNER_PASSWORD)}
+  >>> response = browser.testapp.put('http://nohost/plone/article',
+  ...     xml_input.encode('utf-8'), headers=headers, content_type='text/xml', status=204, extra_environ={'x-wsgiorg.throw_errors': True})
+  >>> response.status_int
+  204
 
 
   >>> article.Title()
@@ -163,28 +167,25 @@ field was updated with the uploaded file contents.
   >>> rst_input = """
   ... Title
   ... =====
-  ...
+  ... 
   ... Some Text
   ... """
 
-  >>> print http(r"""
-  ... PUT /plone/article HTTP/1.1
-  ... Content-Type: text/x-rst
-  ... Authorization: Basic %s:%s
-  ... %s""" %  (SITE_OWNER_NAME, SITE_OWNER_PASSWORD, rst_input), handle_errors=False)
-  HTTP/1.1 204 No Content...
+  >>> response = browser.testapp.put('http://nohost/plone/article',
+  ...     rst_input.encode('utf-8'), headers=headers, content_type='text/x-rst', status=204, extra_environ={'x-wsgiorg.throw_errors': True})
+  >>> response.status_int
+  204
 
   >>> article.Title()
   'Some Title'
 
 Get the ``raw`` body value. Using getBody() would return the rendered HTML.
 
-  >>> print article.getField('text').getRaw(article)
+  >>> print(article.getField('text').getRaw(article).decode('utf-8').strip())
   Title
   =====
   <BLANKLINE>
   Some Text
-  <BLANKLINE>
 
 Now, just restore the previous marshaller, as to leave everything in
 the same state it was found:

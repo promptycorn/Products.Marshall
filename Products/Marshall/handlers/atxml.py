@@ -44,7 +44,7 @@ Authors: kapil thangavelu <k_vertigo@objectrealms.net> (current impl)
 
 #################################
 import sys
-import thread
+import _thread
 import traceback
 from xml.dom import minidom
 from xml.etree import cElementTree as ElementTree
@@ -75,19 +75,19 @@ class ErrorCallback:
         self.append(msg)
 
     def append(self, msg):
-        tid = thread.get_ident()
+        tid = _thread.get_ident()
         msgs = self.msgs.setdefault(tid, [])
         msgs.append(msg)
 
     def get(self, clear=False):
-        tid = thread.get_ident()
+        tid = _thread.get_ident()
         msgs = self.msgs.setdefault(tid, [])
         if clear:
             self.clear()
         return ''.join(msgs)
 
     def clear(self):
-        tid = thread.get_ident()
+        tid = _thread.get_ident()
         msgs = self.msgs[tid] = []
 
 
@@ -125,14 +125,14 @@ class XmlNamespace(object):
         """ get the relaxng fragment that defines
         whats in the namespace
         """
-        raise NotImplemented("Subclass Responsiblity")
+        raise NotImplementedError("Subclass Responsiblity")
 
     def getATFields(self):
         """ return the at schema field names which are
         handled by this namespace, this is utilized by
         the AT namespace so it doesn't also handle these
         fields. """
-        raise NotImplemented("Subclass Responsiblity")
+        raise NotImplementedError("Subclass Responsiblity")
 
     def serialize(self, dom_node, parent_node, instance, options):
         """ serialize the instance values to xml
@@ -151,7 +151,7 @@ class XmlNamespace(object):
         for attribute in self.attributes:
             try:
                 attribute.deserialize(instance, ns_data)
-            except Exception, e:
+            except Exception as e:
                 ec, e, tb = sys.exc_info()
                 ftb = traceback.format_tb(tb,)
                 msg = "failure while demarshalling schema attribute %s\n" % \
@@ -202,17 +202,17 @@ class SchemaAttribute(object):
     def set(self, instance, data):
         """ set the attribute's value on the instance
         """
-        raise NotImplemented
+        raise NotImplementedError
 
     def get(self, instance):
         """ retrieve the schema attribute's value from the instance
         """
-        raise NotImplemented
+        raise NotImplementedError
 
     def serialize(self, dom, instance):
         """ serialize the attribute's instance value into the dom
         """
-        raise NotImplemented
+        raise NotImplementedError
 
     def deserialize(self, instance, ns_data):
         """ give the instance and the namespace data for
@@ -308,7 +308,7 @@ class ATXMLMarshaller(Marshaller):
         namespaces = self.getNamespaceURIMap()
         # Flatten ns into (ns, attr) tuples
         flat_ns = []
-        [flat_ns.extend(zip((n,) * len(n.attrs), n.attrs)) for
+        [flat_ns.extend(list(zip((n,) * len(n.attrs), n.attrs))) for
          n in self.namespaces]
         # Dict mapping an AT fieldname to a (prefix, element name) tuple
         field_map = dict([(a.field, (n.prefix, a.name)) for n, a in flat_ns])
@@ -329,7 +329,7 @@ class ATXMLMarshaller(Marshaller):
         if namespaces is None:
             for ns in getRegisteredNamespaces():
                 yield ns
-            raise StopIteration
+            return
 
         ns = getRegisteredNamespaces()
         for n in ns:
@@ -361,7 +361,7 @@ class ATXMLMarshaller(Marshaller):
             node.setAttributeNode(attr)
 
         content_type = 'text/xml'
-        data = doc.toprettyxml()#.encode('utf-8')
+        data = doc.toprettyxml(encoding='utf-8')
         length = len(data)
         return (content_type, length, data)
 
